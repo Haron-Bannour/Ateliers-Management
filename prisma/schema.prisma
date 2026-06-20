@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Rôles possibles pour un utilisateur
+enum Role {
+  MEMBRE
+  ADMIN
+}
+
+// Statuts possibles pour une réservation
+enum StatutReservation {
+  CONFIRMEE
+  ANNULEE
+}
+
+model User {
+  id           String        @id @default(cuid())
+  nom          String
+  email        String        @unique
+  // Le mot de passe est toujours haché avec bcrypt — jamais stocké en clair
+  passwordHash String
+  role         Role          @default(MEMBRE)
+  createdAt    DateTime      @default(now())
+  reservations Reservation[]
+}
+
+model Atelier {
+  id           String        @id @default(cuid())
+  titre        String
+  description  String
+  theme        String
+  date         DateTime
+  lieu         String
+  // capacite contrôle l'anti-overbooking dans reserverPlace()
+  capacite     Int
+  createdAt    DateTime      @default(now())
+  reservations Reservation[]
+}
+
+model Reservation {
+  id        String            @id @default(cuid())
+  statut    StatutReservation @default(CONFIRMEE)
+  createdAt DateTime          @default(now())
+
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+
+  atelierId String
+  atelier   Atelier @relation(fields: [atelierId], references: [id])
+
+  // Un utilisateur ne peut pas réserver deux fois le même atelier
+  @@unique([userId, atelierId])
+}
