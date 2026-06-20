@@ -1,30 +1,43 @@
 "use client";
-import React, { useState } from 'react'
-import Link from "next/link";
 
-const page = () => {
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+export default function ConnexionPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);
   const [chargement, setChargement] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErreur(null);
     setChargement(true);
 
-    // TODO: appel à /api/auth/connexion — sera branché en Phase 2
-    await new Promise((r) => setTimeout(r, 800));
-    setErreur("Identifiants incorrects.");
-    setChargement(false);
+    const res = await fetch("/api/auth/connexion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, motDePasse }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setErreur(data.message ?? "Une erreur est survenue.");
+      setChargement(false);
+      return;
+    }
+
+    // Redirection selon le rôle
+    router.push(data.role === "ADMIN" ? "/admin/ateliers" : "/");
+    router.refresh();
   }
+
   return (
-
-
-
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
-        {/* Logo / retour accueil */}
         <Link href="/" className="mb-8 block text-center text-xl font-bold tracking-tight text-gray-900">
           ReservA
         </Link>
@@ -50,11 +63,9 @@ const page = () => {
             </div>
 
             <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label htmlFor="motDePasse" className="block text-sm font-medium text-gray-700">
-                  Mot de passe
-                </label>
-              </div>
+              <label htmlFor="motDePasse" className="mb-1.5 block text-sm font-medium text-gray-700">
+                Mot de passe
+              </label>
               <input
                 id="motDePasse"
                 type="password"
@@ -89,7 +100,5 @@ const page = () => {
         </p>
       </div>
     </div>
-  )
+  );
 }
-
-export default page

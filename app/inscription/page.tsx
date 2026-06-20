@@ -1,19 +1,22 @@
-"use client"
-import Link from "next/link";
-import React, { useState } from 'react'
+"use client";
 
-const page = () => {
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+export default function InscriptionPage() {
+  const router = useRouter();
   const [nom, setNom] = useState("");
   const [email, setEmail] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);
   const [chargement, setChargement] = useState(false);
-    async function handleSubmit(e: React.FormEvent) {
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErreur(null);
 
-    // Validation côté client (le serveur revalidera aussi — règle de sécurité)
     if (motDePasse.length < 8) {
       setErreur("Le mot de passe doit contenir au moins 8 caractères.");
       return;
@@ -24,14 +27,28 @@ const page = () => {
     }
 
     setChargement(true);
-    // TODO: appel à /api/auth/inscription — sera branché en Phase 2
-    await new Promise((r) => setTimeout(r, 800));
-    setErreur("Cette adresse e-mail est déjà utilisée."); // placeholder jusqu'à l'API
-    setChargement(false);
+
+    const res = await fetch("/api/auth/inscription", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nom, email, motDePasse }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setErreur(data.message ?? "Une erreur est survenue.");
+      setChargement(false);
+      return;
+    }
+
+    router.push("/");
+    router.refresh();
   }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
-<div className="w-full max-w-sm">
+      <div className="w-full max-w-sm">
         <Link href="/" className="mb-8 block text-center text-xl font-bold tracking-tight text-gray-900">
           ReservA
         </Link>
@@ -125,10 +142,6 @@ const page = () => {
           </Link>
         </p>
       </div>
-
-
-</div>
-  )
+    </div>
+  );
 }
-
-export default page
